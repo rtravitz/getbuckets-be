@@ -16,7 +16,6 @@ func respond(w http.ResponseWriter, data interface{}, statusCode int) error {
 		return err
 	}
 
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
 	// Write the status code to the response.

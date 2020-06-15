@@ -26,3 +26,14 @@ func List(db *sqlx.DB) ([]Bucket, error) {
 
 	return buckets, nil
 }
+
+//Save saves a new bucket
+func (b *Bucket) Save(db *sqlx.DB) error {
+	const q = `INSERT INTO buckets (lat, lng) VALUES ($1, $2) RETURNING id, created_at, updated_at`
+	err := db.QueryRow(q, b.Lat, b.Lng).Scan(&b.ID, &b.CreatedAt, &b.UpdatedAt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
