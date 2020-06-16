@@ -21,6 +21,45 @@ type RatedBucket struct {
 	AverageRating AvgRating `json:"average_rating"`
 }
 
+func processRatedBucketRow(row *sql.Row, b *RatedBucket) error {
+	var cleanliness sql.NullFloat64
+	err := row.Scan(&b.ID, &b.Lat, &b.Lng, &b.CreatedAt, &b.UpdatedAt,
+		&cleanliness, &b.AverageRating.LockedPercent, &b.AverageRating.LockRatings, &b.AverageRating.CleanRatings)
+	if err != nil {
+		return err
+	}
+
+	if cleanliness.Valid {
+		b.AverageRating.Cleanliness = cleanliness.Float64
+	}
+
+	return nil
+}
+
+func Show(db *sqlx.DB, bucketID int) (RatedBucket, error) {
+	var b RatedBucket
+	const q = `
+		SELECT 
+			buckets.id, buckets.lat, buckets.lng, buckets.created_at, buckets.updated_at, 
+			AVG(ratings.cleanliness) AS cleanliness,
+			(((COUNT(*) FILTER (WHERE "locked")) / CAST(COUNT(*) AS DECIMAL)) * 100) AS locked_percent,
+			COUNT(ratings.locked) as lock_ratings,
+			COUNT(ratings.cleanliness) as clean_ratings
+		FROM buckets
+		LEFT JOIN ratings ON buckets.id = ratings.bucket_id
+		GROUP BY buckets.id
+		HAVING buckets.id = $1;
+	`
+
+	row := db.QueryRow(q, bucketID)
+	err := processRatedBucketRow(row, &b)
+	if err != nil {
+		return b, err
+	}
+
+	return b, nil
+}
+
 //List retrieves a list of existing buckets from the database
 func List(db *sqlx.DB) ([]RatedBucket, error) {
 	var buckets []RatedBucket
@@ -29,7 +68,8 @@ func List(db *sqlx.DB) ([]RatedBucket, error) {
 			buckets.id, buckets.lat, buckets.lng, buckets.created_at, buckets.updated_at, 
 			AVG(ratings.cleanliness) AS cleanliness,
 			(((COUNT(*) FILTER (WHERE "locked")) / CAST(COUNT(*) AS DECIMAL)) * 100) AS locked_percent,
-			COUNT(ratings.bucket_id) AS num_ratings
+			COUNT(ratings.locked) as lock_ratings,
+			COUNT(ratings.cleanliness) as clean_ratings
 		FROM buckets
 		LEFT JOIN ratings ON buckets.id = ratings.bucket_id
 		GROUP BY buckets.id;
@@ -44,7 +84,7 @@ func List(db *sqlx.DB) ([]RatedBucket, error) {
 		var b RatedBucket
 		var cleanliness sql.NullFloat64
 		err = rows.Scan(&b.ID, &b.Lat, &b.Lng, &b.CreatedAt, &b.UpdatedAt,
-			&cleanliness, &b.AverageRating.LockedPercent, &b.AverageRating.NumRatings)
+			&cleanliness, &b.AverageRating.LockedPercent, &b.AverageRating.LockRatings, &b.AverageRating.CleanRatings)
 		if err != nil {
 			return buckets, err
 		}

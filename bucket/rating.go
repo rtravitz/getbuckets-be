@@ -20,7 +20,38 @@ type Rating struct {
 type AvgRating struct {
 	Cleanliness   float64 `json:"cleanliness"`
 	LockedPercent float64 `json:"locked_percent"`
-	NumRatings    int     `json:"num_ratings"`
+	LockRatings   int     `json:"lock_ratings"`
+	CleanRatings  int     `json:"clean_ratings"`
+}
+
+func SaveCleanlinessRating(db *sqlx.DB, r Rating) (Rating, error) {
+	const q = `
+		INSERT INTO ratings (cleanliness, bucket_id)
+		VALUES ($1, $2)
+		RETURNING id, created_at, updated_at
+	`
+
+	err := db.QueryRow(q, r.Cleanliness, r.BucketID).Scan(&r.ID, &r.CreatedAt, &r.UpdatedAt)
+	if err != nil {
+		return r, err
+	}
+
+	return r, nil
+}
+
+func SaveLockedRating(db *sqlx.DB, r Rating) (Rating, error) {
+	const q = `
+		INSERT INTO ratings (locked, bucket_id)
+		VALUES ($1, $2)
+		RETURNING id, created_at, updated_at
+	`
+
+	err := db.QueryRow(q, r.Locked, r.BucketID).Scan(&r.ID, &r.CreatedAt, &r.UpdatedAt)
+	if err != nil {
+		return r, err
+	}
+
+	return r, nil
 }
 
 //SaveRating persists a rating for a bucket
@@ -28,9 +59,8 @@ func SaveRating(db *sqlx.DB, r Rating) (Rating, error) {
 	const q = `
 		INSERT INTO ratings (cleanliness, locked, bucket_id)
 		VALUES ($1, $2, $3)
-		RETURNING id, created_at, update_at
+		RETURNING id, created_at, updated_at
 	`
-
 	err := db.QueryRow(q, r.Cleanliness, r.Locked, r.BucketID).Scan(&r.ID, &r.CreatedAt, &r.UpdatedAt)
 	if err != nil {
 		return r, err
