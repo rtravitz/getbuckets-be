@@ -1,6 +1,7 @@
 package bucket
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -15,13 +16,44 @@ type Bucket struct {
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
-//List retrieves a list of existing buckets from the database
-func List(db *sqlx.DB) ([]Bucket, error) {
-	buckets := []Bucket{}
-	const q = `SELECT * FROM buckets`
+type RatedBucket struct {
+	Bucket
+	AverageRating AvgRating `json:"average_rating"`
+}
 
-	if err := db.Select(&buckets, q); err != nil {
-		return nil, err
+//List retrieves a list of existing buckets from the database
+func List(db *sqlx.DB) ([]RatedBucket, error) {
+	var buckets []RatedBucket
+	const q = `
+		SELECT 
+			buckets.id, buckets.lat, buckets.lng, buckets.created_at, buckets.updated_at, 
+			AVG(ratings.cleanliness) AS cleanliness,
+			(((COUNT(*) FILTER (WHERE "locked")) / CAST(COUNT(*) AS DECIMAL)) * 100) AS locked_percent,
+			COUNT(ratings.bucket_id) AS num_ratings
+		FROM buckets
+		LEFT JOIN ratings ON buckets.id = ratings.bucket_id
+		GROUP BY buckets.id;
+	`
+
+	rows, err := db.Query(q)
+	if err != nil {
+		return buckets, err
+	}
+
+	for rows.Next() {
+		var b RatedBucket
+		var cleanliness sql.NullFloat64
+		err = rows.Scan(&b.ID, &b.Lat, &b.Lng, &b.CreatedAt, &b.UpdatedAt,
+			&cleanliness, &b.AverageRating.LockedPercent, &b.AverageRating.NumRatings)
+		if err != nil {
+			return buckets, err
+		}
+
+		if cleanliness.Valid {
+			b.AverageRating.Cleanliness = cleanliness.Float64
+		}
+
+		buckets = append(buckets, b)
 	}
 
 	return buckets, nil
