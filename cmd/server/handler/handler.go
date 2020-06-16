@@ -58,13 +58,13 @@ func SaveRatingHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		b := bucket.Bucket{ID: bucketID}
-		err = b.SaveRating(db, rating)
+		rating.BucketID = bucketID
+		savedRating, err := bucket.SaveRating(db, rating)
 		if err != nil {
 			respondError(w, err)
 			return
 		}
 
-		respond(w, rating, http.StatusCreated)
+		respond(w, savedRating, http.StatusCreated)
 	}
 }

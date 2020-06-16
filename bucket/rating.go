@@ -24,36 +24,37 @@ type AvgRating struct {
 }
 
 //SaveRating persists a rating for a bucket
-func (b *Bucket) SaveRating(db *sqlx.DB, r Rating) error {
+func SaveRating(db *sqlx.DB, r Rating) (Rating, error) {
 	const q = `
 		INSERT INTO ratings (cleanliness, locked, bucket_id)
 		VALUES ($1, $2, $3)
+		RETURNING id, created_at, update_at
 	`
 
-	_, err := db.Exec(q, r.Cleanliness, r.Locked, b.ID)
+	err := db.QueryRow(q, r.Cleanliness, r.Locked, r.BucketID).Scan(&r.ID, &r.CreatedAt, &r.UpdatedAt)
 	if err != nil {
-		return err
+		return r, err
 	}
 
-	return nil
+	return r, nil
 }
 
-//AverageRating returns the averages of ratings for a bucket
-func (b *Bucket) AverageRating(db *sqlx.DB) (AvgRating, error) {
+//GetAverageRating returns the averages of ratings for a bucket
+func GetAverageRating(db *sqlx.DB, bucketID int) (AvgRating, error) {
 	const q = `
 		SELECT * FROM ratings
 		WHERE bucket_id = $1
 	`
 	var ratings []Rating
-	err := db.Select(&ratings, q, b.ID)
+	err := db.Select(&ratings, q, bucketID)
 	if err != nil {
 		return AvgRating{}, err
 	}
 
-	return getAvgRating(ratings), nil
+	return calcAvgRatings(ratings), nil
 }
 
-func getAvgRating(ratings []Rating) AvgRating {
+func calcAvgRatings(ratings []Rating) AvgRating {
 	var sum int
 	var locked int
 	totalRatings := float64(len(ratings))
