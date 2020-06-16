@@ -42,4 +42,24 @@ var migrations = []darwin.Migration{
 		EXECUTE PROCEDURE trigger_set_timestamp();
 		`,
 	},
+	{
+		Version:     2,
+		Description: "Add Ratings",
+		Script: `
+		CREATE TABLE ratings (
+			id SERIAL NOT NULL PRIMARY KEY,
+			cleanliness INTEGER NOT NULL,
+			locked BOOLEAN NOT NULL,
+			bucket_id INTEGER NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			FOREIGN KEY (bucket_id) REFERENCES buckets (id)
+		);
+
+		CREATE TRIGGER set_timestamp_ratings
+		BEFORE UPDATE ON ratings
+		FOR EACH ROW
+		EXECUTE PROCEDURE trigger_set_timestamp();
+		`,
+	},
 }

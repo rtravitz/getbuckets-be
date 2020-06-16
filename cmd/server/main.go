@@ -91,6 +91,7 @@ func API(log *log.Logger, db *sqlx.DB) http.Handler {
 	s := r.PathPrefix("/api/v0").Subrouter()
 	s.HandleFunc("/buckets", handler.BucketsHandler(db)).Methods("GET")
 	s.HandleFunc("/buckets", handler.SaveBucketHandler(db)).Methods("POST")
+	s.HandleFunc("/buckets/{bucket_id}/ratings", handler.SaveRatingHandler(db)).Methods("POST")
 
 	return cors.Default().Handler(r)
 }
