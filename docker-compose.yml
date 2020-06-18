@@ -1,0 +1,23 @@
+version '3.8'
+
+services:
+  getbuckets:
+    container_name: getbuckets-be
+    build:
+      context: .
+      target: dev
+    image: getbuckets-be
+    ports:
+      - 5000:5000
+    volumes:
+      - .:.
+    command: CompileDaemon --build='go build cmd/server/main.go' --command='./main'
+    depends_on: 
+      - bucket-db
+  
+  bucket-db:
+    container_name: bucket-db
+    image: postgres:11.1-alpine
+    ports:
+      5432:5432
+
