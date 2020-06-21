@@ -57,7 +57,9 @@ func SaveBucketHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		respond(w, b, http.StatusCreated)
+		rated := bucket.RatedBucket{Bucket: b}
+
+		respond(w, rated, http.StatusCreated)
 	}
 }
 
@@ -78,16 +80,16 @@ func SaveCleanRatingHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-    ratingReq.BucketID = bucketID
+		ratingReq.BucketID = bucketID
 
-    savedRating, err := bucket.SaveCleanlinessRating(db, ratingReq)
+		savedRating, err := bucket.SaveCleanlinessRating(db, ratingReq)
 		if err != nil {
 			respondError(w, err)
 			return
 		}
 
 		respond(w, savedRating, http.StatusCreated)
-  }
+	}
 }
 
 func SaveLockRatingHandler(db *sqlx.DB) http.HandlerFunc {
@@ -107,15 +109,14 @@ func SaveLockRatingHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-    ratingReq.BucketID = bucketID
+		ratingReq.BucketID = bucketID
 
-    savedRating, err := bucket.SaveLockedRating(db, ratingReq)
+		savedRating, err := bucket.SaveLockedRating(db, ratingReq)
 		if err != nil {
 			respondError(w, err)
 			return
 		}
 
 		respond(w, savedRating, http.StatusCreated)
-  }
+	}
 }
-
