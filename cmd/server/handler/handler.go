@@ -17,8 +17,11 @@ func BucketsHandler(db *sqlx.DB) http.HandlerFunc {
 			respondError(w, err)
 			return
 		}
-
-		respond(w, buckets, http.StatusOK)
+		if len(buckets) == 0 {
+			respond(w, make([]bucket.RatedBucket, 0), http.StatusOK)
+		} else {
+			respond(w, buckets, http.StatusOK)
+		}
 	}
 }
 
