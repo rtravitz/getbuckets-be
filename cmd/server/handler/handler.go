@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -62,14 +61,9 @@ func SaveBucketHandler(db *sqlx.DB) http.HandlerFunc {
 	}
 }
 
-type RatingReq struct {
-	Locked      *bool `json:"locked"`
-	Cleanliness *int  `json:"cleanliness"`
-}
-
-func SaveRatingHandler(db *sqlx.DB) http.HandlerFunc {
+func SaveCleanRatingHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var ratingReq RatingReq
+		var ratingReq bucket.CleanRating
 		err := json.NewDecoder(r.Body).Decode(&ratingReq)
 		if err != nil {
 			respondError(w, err)
@@ -84,28 +78,44 @@ func SaveRatingHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		rating := bucket.Rating{BucketID: bucketID}
+    ratingReq.BucketID = bucketID
 
-		var savedRating bucket.Rating
-		if ratingReq.Cleanliness != nil && ratingReq.Locked != nil {
-			rating.Cleanliness = *ratingReq.Cleanliness
-			rating.Locked = *ratingReq.Locked
-			savedRating, err = bucket.SaveRating(db, rating)
-		} else if ratingReq.Cleanliness != nil {
-			rating.Cleanliness = *ratingReq.Cleanliness
-			savedRating, err = bucket.SaveCleanlinessRating(db, rating)
-		} else if ratingReq.Locked != nil {
-			rating.Locked = *ratingReq.Locked
-			savedRating, err = bucket.SaveLockedRating(db, rating)
-		} else {
-			err = errors.New("no valid rating were passed. must provide either cleanliness, locked, or both.")
-		}
-
+    savedRating, err := bucket.SaveCleanlinessRating(db, ratingReq)
 		if err != nil {
 			respondError(w, err)
 			return
 		}
 
 		respond(w, savedRating, http.StatusCreated)
-	}
+  }
 }
+
+func SaveLockRatingHandler(db *sqlx.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var ratingReq bucket.LockRating
+		err := json.NewDecoder(r.Body).Decode(&ratingReq)
+		if err != nil {
+			respondError(w, err)
+			return
+		}
+
+		vars := mux.Vars(r)
+		strID := vars["bucket_id"]
+		bucketID, err := strconv.Atoi(strID)
+		if err != nil {
+			respondError(w, err)
+			return
+		}
+
+    ratingReq.BucketID = bucketID
+
+    savedRating, err := bucket.SaveLockedRating(db, ratingReq)
+		if err != nil {
+			respondError(w, err)
+			return
+		}
+
+		respond(w, savedRating, http.StatusCreated)
+  }
+}
+

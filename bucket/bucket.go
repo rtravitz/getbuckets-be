@@ -39,16 +39,17 @@ func processRatedBucketRow(row *sql.Row, b *RatedBucket) error {
 func Show(db *sqlx.DB, bucketID int) (RatedBucket, error) {
 	var b RatedBucket
 	const q = `
-		SELECT 
-			buckets.id, buckets.lat, buckets.lng, buckets.created_at, buckets.updated_at, 
-			AVG(ratings.cleanliness) AS cleanliness,
-			(((COUNT(*) FILTER (WHERE "locked")) / CAST(COUNT(*) AS DECIMAL)) * 100) AS locked_percent,
-			COUNT(ratings.locked) as lock_ratings,
-			COUNT(ratings.cleanliness) as clean_ratings
-		FROM buckets
-		LEFT JOIN ratings ON buckets.id = ratings.bucket_id
-		GROUP BY buckets.id
-		HAVING buckets.id = $1;
+    SELECT 
+      buckets.id, buckets.lat, buckets.lng, buckets.created_at, buckets.updated_at, 
+      AVG(clean_ratings.score) AS cleanliness,
+      (((COUNT(*) FILTER (WHERE "locked")) / CAST(COUNT(*) AS DECIMAL)) * 100) AS locked_percent,
+      COUNT(distinct lock_ratings.id) as lock_ratings,
+      COUNT(distinct clean_ratings.id) as clean_ratings
+    FROM buckets
+    LEFT JOIN clean_ratings ON buckets.id = clean_ratings.bucket_id
+    LEFT JOIN lock_ratings ON buckets.id = lock_ratings.bucket_id
+    GROUP BY buckets.id
+    HAVING buckets.id = $1;
 	`
 
 	row := db.QueryRow(q, bucketID)
@@ -64,15 +65,16 @@ func Show(db *sqlx.DB, bucketID int) (RatedBucket, error) {
 func List(db *sqlx.DB) ([]RatedBucket, error) {
 	var buckets []RatedBucket
 	const q = `
-		SELECT 
-			buckets.id, buckets.lat, buckets.lng, buckets.created_at, buckets.updated_at, 
-			AVG(ratings.cleanliness) AS cleanliness,
-			(((COUNT(*) FILTER (WHERE "locked")) / CAST(COUNT(*) AS DECIMAL)) * 100) AS locked_percent,
-			COUNT(ratings.locked) as lock_ratings,
-			COUNT(ratings.cleanliness) as clean_ratings
-		FROM buckets
-		LEFT JOIN ratings ON buckets.id = ratings.bucket_id
-		GROUP BY buckets.id;
+    SELECT 
+      buckets.id, buckets.lat, buckets.lng, buckets.created_at, buckets.updated_at, 
+      AVG(clean_ratings.score) AS cleanliness,
+      (((COUNT(*) FILTER (WHERE "locked")) / CAST(COUNT(*) AS DECIMAL)) * 100) AS locked_percent,
+      COUNT(distinct lock_ratings.id) as lock_ratings,
+      COUNT(distinct clean_ratings.id) as clean_ratings
+    FROM buckets
+    LEFT JOIN clean_ratings ON buckets.id = clean_ratings.bucket_id
+    LEFT JOIN lock_ratings ON buckets.id = lock_ratings.bucket_id
+    GROUP BY buckets.id;
 	`
 
 	rows, err := db.Query(q)

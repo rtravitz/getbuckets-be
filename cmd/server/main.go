@@ -92,7 +92,8 @@ func API(log *log.Logger, db *sqlx.DB) http.Handler {
 	s.HandleFunc("/buckets", handler.BucketsHandler(db)).Methods("GET")
 	s.HandleFunc("/buckets", handler.SaveBucketHandler(db)).Methods("POST")
 	s.HandleFunc("/buckets/{bucket_id}", handler.ShowBucketHandler(db)).Methods("GET")
-	s.HandleFunc("/buckets/{bucket_id}/ratings", handler.SaveRatingHandler(db)).Methods("POST")
+	s.HandleFunc("/buckets/{bucket_id}/clean", handler.SaveCleanRatingHandler(db)).Methods("POST")
+	s.HandleFunc("/buckets/{bucket_id}/lock", handler.SaveLockRatingHandler(db)).Methods("POST")
 
 	return cors.Default().Handler(r)
 }
