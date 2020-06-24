@@ -7,12 +7,22 @@ import (
 	"os"
 
 	"github.com/ardanlabs/conf"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/cors"
 	"github.com/rtravitz/getbuckets-be/cmd/server/handler"
 	"github.com/rtravitz/getbuckets-be/database"
 )
+
+type LogWriter struct {
+	*log.Logger
+}
+
+func (lw LogWriter) Write(p []byte) (n int, err error) {
+	lw.Print(string(p))
+	return len(p), nil
+}
 
 func getPort() string {
 	port := os.Getenv("PORT")
@@ -95,7 +105,10 @@ func API(log *log.Logger, db *sqlx.DB) http.Handler {
 	s.HandleFunc("/buckets/{bucket_id}/clean", handler.SaveCleanRatingHandler(db)).Methods("POST")
 	s.HandleFunc("/buckets/{bucket_id}/lock", handler.SaveLockRatingHandler(db)).Methods("POST")
 
-	return cors.Default().Handler(r)
+	lw := LogWriter{log}
+	loggingRouter := handlers.LoggingHandler(lw, r)
+
+	return cors.Default().Handler(loggingRouter)
 }
 
 func main() {
