@@ -22,8 +22,7 @@ var migrations = []darwin.Migration{
 		Script: `
 		CREATE TABLE buckets (
 			id SERIAL NOT NULL PRIMARY KEY,
-			lat DOUBLE PRECISION NOT NULL,
-			lng DOUBLE PRECISION NOT NULL,
+			coords geometry(Point, 4326) NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 			updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 		);

@@ -104,6 +104,7 @@ func API(log *log.Logger, db *sqlx.DB) http.Handler {
 	s.HandleFunc("/buckets/{bucket_id}", handler.ShowBucketHandler(db)).Methods("GET")
 	s.HandleFunc("/buckets/{bucket_id}/clean", handler.SaveCleanRatingHandler(db)).Methods("POST")
 	s.HandleFunc("/buckets/{bucket_id}/lock", handler.SaveLockRatingHandler(db)).Methods("POST")
+	s.HandleFunc("/bucketsbox", handler.BucketsByBBoxHandler(db)).Methods("GET")
 
 	lw := LogWriter{log}
 	loggingRouter := handlers.LoggingHandler(lw, r)

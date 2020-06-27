@@ -2,3 +2,4 @@ cmd/admin/admin
 cmd/server/server
 main
 server
+postgres-data/

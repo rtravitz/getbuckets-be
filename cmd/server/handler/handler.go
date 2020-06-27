@@ -2,8 +2,10 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -13,6 +15,53 @@ import (
 func BucketsHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		buckets, err := bucket.List(db)
+		if err != nil {
+			respondError(w, err)
+			return
+		}
+		if len(buckets) == 0 {
+			respond(w, make([]bucket.RatedBucket, 0), http.StatusOK)
+		} else {
+			respond(w, buckets, http.StatusOK)
+		}
+	}
+}
+
+func processCoords(param string) (bucket.BoundingBox, error) {
+	coords := strings.Split(param, ",")
+	var processed []float64
+	for _, coord := range coords {
+		res, err := strconv.ParseFloat(coord, 64)
+		if err != nil {
+			return bucket.BoundingBox{}, err
+		}
+		processed = append(processed, res)
+	}
+
+	return bucket.BoundingBox{
+		SWLng: processed[0],
+		SWLat: processed[1],
+		NELng: processed[2],
+		NELat: processed[3],
+	}, nil
+}
+
+func BucketsByBBoxHandler(db *sqlx.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		bboxParam, ok := r.URL.Query()["bbox"]
+
+		if !ok || len(bboxParam[0]) < 1 {
+			log.Println("url param 'bbox' is missing")
+			return
+		}
+
+		bbox, err := processCoords(bboxParam[0])
+		if err != nil {
+			respondError(w, err)
+			return
+		}
+
+		buckets, err := bucket.ListInBox(db, bbox)
 		if err != nil {
 			respondError(w, err)
 			return
