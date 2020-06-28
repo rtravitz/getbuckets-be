@@ -12,21 +12,6 @@ import (
 	"github.com/rtravitz/getbuckets-be/bucket"
 )
 
-func BucketsHandler(db *sqlx.DB) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		buckets, err := bucket.List(db)
-		if err != nil {
-			respondError(w, err)
-			return
-		}
-		if len(buckets) == 0 {
-			respond(w, make([]bucket.RatedBucket, 0), http.StatusOK)
-		} else {
-			respond(w, buckets, http.StatusOK)
-		}
-	}
-}
-
 func processCoords(param string) (bucket.BoundingBox, error) {
 	coords := strings.Split(param, ",")
 	var processed []float64
@@ -46,7 +31,7 @@ func processCoords(param string) (bucket.BoundingBox, error) {
 	}, nil
 }
 
-func BucketsByBBoxHandler(db *sqlx.DB) http.HandlerFunc {
+func BucketsHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bboxParam, ok := r.URL.Query()["bbox"]
 
