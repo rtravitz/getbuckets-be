@@ -5,4 +5,10 @@ This is the API server for [GetBuckets](https://github.com/rtravitz/getbuckets).
 ## Running
 Have Postgres listening on port 5432 with a database created by the `postgres` named `getbuckets`. 
 
-With Go installed, run `make migrate` to run database migrations. Then use `make run` or `migrate watch` to start the server.
+With Go installed, run `make migrate` to run database migrations. Then use `make run` or `make watch` to start the server.
+
+## Tests
+For this silly thing?
+
+## Other comments
+The file structure is loosely based on [ardanlabs/service](https://github.com/ardanlabs/service). 
